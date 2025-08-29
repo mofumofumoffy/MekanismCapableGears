@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "moffy.mekanism_capable_gears.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "mekanism_capable_tool.refmap.json",
+  "mixins": [
+    "ItemMixin",
+    "ModuleHelperMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
