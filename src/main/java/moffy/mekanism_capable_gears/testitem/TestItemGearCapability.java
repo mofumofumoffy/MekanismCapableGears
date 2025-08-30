@@ -20,9 +20,6 @@ import java.util.Collections;
 import java.util.Map;
 
 public class TestItemGearCapability extends MekaGearsCapability implements IBlastingItem {
-    public TestItemGearCapability(ItemStack stack) {
-        super(stack);
-    }
 
     @Override
     public ResourceLocation getRadialId() {

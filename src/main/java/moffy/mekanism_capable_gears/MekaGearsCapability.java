@@ -33,81 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public abstract class MekaGearsCapability implements IModuleContainerItem, IGenericRadialModeItem {
-    public static final Capability<MekaGearsCapability> MEKA_GEARS_CAPABILITY = CapabilityManager.get(new CapabilityToken<MekaGearsCapability>() {
+public abstract class MekaGearsCapability implements IMekaGears {
+    public static final Capability<IMekaGears> MEKA_GEARS_CAPABILITY = CapabilityManager.get(new CapabilityToken<IMekaGears>() {
     });
-
-    protected final ItemStack stack;
-
-    public MekaGearsCapability(ItemStack stack) {
-        this.stack = stack;
-    }
-
-    public boolean areCapabilityConfigsLoaded() {
-        return MekanismConfig.gear.isLoaded();
-    }
-
-    public void gatherCapabilities(List<ItemCapabilityWrapper.ItemCapability> capabilities) {
-        capabilities.add(RateLimitEnergyHandler.create(() -> getChargeRate(stack), () -> getMaxEnergy(stack), BasicEnergyContainer.manualOnly,
-                BasicEnergyContainer.alwaysTrue));
-    }
-
-    @Override
-    public @Nullable RadialData<?> getRadialData(ItemStack stack) {
-        List<NestedRadialMode> nestedModes = new ArrayList<>();
-        Consumer<NestedRadialMode> adder = nestedModes::add;
-        for (Module<?> module : getModules(stack)) {
-            if (module.handlesRadialModeChange()) {
-                module.addRadialModes(stack, adder);
-            }
-        }
-        if (nestedModes.isEmpty()) {
-            return null;
-        } else if (nestedModes.size() == 1) {
-            return nestedModes.get(0).nestedData();
-        }
-        return new NestingRadialData(getRadialId(), nestedModes);
-    }
-
-    @Override
-    public <M extends IRadialMode> @Nullable M getMode(ItemStack stack, RadialData<M> radialData) {
-        for (Module<?> module : getModules(stack)) {
-            if (module.handlesRadialModeChange()) {
-                M mode = module.getMode(stack, radialData);
-                if (mode != null) {
-                    return mode;
-                }
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public <M extends IRadialMode> void setMode(ItemStack stack, Player player, RadialData<M> radialData, M mode) {
-        for (Module<?> module : getModules(stack)) {
-            if (module.handlesRadialModeChange() && module.setMode(player, stack, radialData, mode)) {
-                return;
-            }
-        }
-    }
-
-    @Override
-    public void changeMode(@NotNull Player player, @NotNull ItemStack stack, int shift, DisplayChange displayChange) {
-        for (Module<?> module : getModules(stack)) {
-            if (module.handlesModeChange()) {
-                module.changeMode(player, stack, shift, displayChange);
-                return;
-            }
-        }
-    }
-
-    public abstract ResourceLocation getRadialId();
-    public abstract FloatingLong getChargeRate(ItemStack stack);
-    public abstract FloatingLong getMaxEnergy(ItemStack stack);
 
     public abstract static class Provider implements ICapabilityProvider {
 
-        protected final MekaGearsCapability mekaGearsCapability;
+        protected final IMekaGears mekaGearsCapability;
         private final ItemCapabilityWrapper itemCapabilityWrapper;
 
         public Provider(ItemStack stack){
@@ -115,13 +47,13 @@ public abstract class MekaGearsCapability implements IModuleContainerItem, IGene
             List<ItemCapabilityWrapper.ItemCapability> capabilities = new ArrayList<>();
 
             if(mekaGearsCapability.areCapabilityConfigsLoaded()){
-                mekaGearsCapability.gatherCapabilities(capabilities);
+                mekaGearsCapability.gatherCapabilities(stack, capabilities);
             }
 
             this.itemCapabilityWrapper = new ItemCapabilityWrapper(stack, capabilities.toArray(ItemCapabilityWrapper.ItemCapability[]::new));
         }
 
-        public abstract MekaGearsCapability getMekaGearsCapability(ItemStack stack);
+        public abstract IMekaGears getMekaGearsCapability(ItemStack stack);
 
         @Override
         public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction direction) {

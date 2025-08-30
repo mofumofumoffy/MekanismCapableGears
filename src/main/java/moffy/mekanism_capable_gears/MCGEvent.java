@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 
 public class MCGEvent {
     public static void onRegisterCaps(RegisterCapabilitiesEvent event) {
-        event.register(MekaGearsCapability.class);
+        event.register(IMekaGears.class);
     }
 
     public static void onModifyAttribute(ItemAttributeModifierEvent event){

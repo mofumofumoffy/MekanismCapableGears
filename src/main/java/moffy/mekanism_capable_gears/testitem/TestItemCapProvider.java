@@ -1,5 +1,6 @@
 package moffy.mekanism_capable_gears.testitem;
 
+import moffy.mekanism_capable_gears.IMekaGears;
 import moffy.mekanism_capable_gears.MekaGearsCapability;
 import net.minecraft.world.item.ItemStack;
 
@@ -9,7 +10,7 @@ public class TestItemCapProvider extends MekaGearsCapability.Provider {
     }
 
     @Override
-    public MekaGearsCapability getMekaGearsCapability(ItemStack stack) {
-        return new TestItemGearCapability(stack);
+    public IMekaGears getMekaGearsCapability(ItemStack stack) {
+        return new TestItemGearCapability();
     }
 }

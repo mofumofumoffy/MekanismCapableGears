@@ -38,6 +38,7 @@ import mekanism.common.util.ItemDataUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.StorageUtils;
 import moffy.mekanism_capable_gears.IAttributeCacheAccessor;
+import moffy.mekanism_capable_gears.IMekaGears;
 import moffy.mekanism_capable_gears.MekaGearsCapability;
 import moffy.mekanism_capable_gears.IMekaForgeItemHandler;
 import net.minecraft.core.BlockPos;
@@ -334,9 +335,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public @Nullable RadialData<?> getRadialData(ItemStack stack) {
-        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            MekaGearsCapability mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             return mekaGearsCapability.getRadialData(stack);
         }
         return null;
@@ -344,9 +345,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public <M extends IRadialMode> @Nullable M getMode(ItemStack stack, RadialData<M> radialData) {
-        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            MekaGearsCapability mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             return mekaGearsCapability.getMode(stack, radialData);
         }
         return null;
@@ -354,18 +355,18 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public <M extends IRadialMode> void setMode(ItemStack stack, Player player, RadialData<M> radialData, M mode) {
-        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            MekaGearsCapability mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             mekaGearsCapability.setMode(stack, player, radialData, mode);
         }
     }
 
     @Override
     public void changeMode(@NotNull Player player, @NotNull ItemStack stack, int shift, DisplayChange displayChange) {
-        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
         if (mekaGearsCapabilityLazyOptional.isPresent()) {
-            MekaGearsCapability mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             mekaGearsCapability.changeMode(player, stack, shift, displayChange);
         }
     }
@@ -382,9 +383,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public boolean onBlockStartBreak(ItemStack stack, BlockPos pos, Player player) {
-        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            MekaGearsCapability capability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGears capability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
 
             if (player.level().isClientSide || player.isCreative()) {
                 return false;
