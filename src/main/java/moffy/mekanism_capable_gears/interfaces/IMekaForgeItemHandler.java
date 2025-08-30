@@ -1,4 +1,4 @@
-package moffy.mekanism_capable_gears;
+package moffy.mekanism_capable_gears.interfaces;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;

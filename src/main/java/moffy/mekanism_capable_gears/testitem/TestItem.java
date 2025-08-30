@@ -1,6 +1,5 @@
 package moffy.mekanism_capable_gears.testitem;
 
-import moffy.mekanism_capable_gears.MekaGearsCapability;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,6 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.ToolAction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class TestItem extends Item {
@@ -23,7 +23,7 @@ public class TestItem extends Item {
     }
 
     @Override
-    public boolean isCorrectToolForDrops(BlockState pBlock) {
+    public boolean isCorrectToolForDrops(@NotNull BlockState pBlock) {
         return true;
     }
 

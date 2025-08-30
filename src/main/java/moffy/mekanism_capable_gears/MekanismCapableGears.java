@@ -33,6 +33,11 @@ public class MekanismCapableGears {
         bus.addListener(MCGEvent::onRegisterCaps);
 
         MinecraftForge.EVENT_BUS.addListener(MCGEvent::onModifyAttribute);
+        MinecraftForge.EVENT_BUS.addListener(MCGEvent::onEntityAttack);
+        MinecraftForge.EVENT_BUS.addListener(MCGEvent::onLivingHurt);
+        MinecraftForge.EVENT_BUS.addListener(MCGEvent::onLivingJump);
+        MinecraftForge.EVENT_BUS.addListener(MCGEvent::onTick);
+        MinecraftForge.EVENT_BUS.addListener(MCGEvent::getBreakSpeed);
 
 
         TEST_ITEM = ITEMS.register("test_item", TestItem::new);

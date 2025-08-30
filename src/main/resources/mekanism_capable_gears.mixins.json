@@ -5,8 +5,12 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "mekanism_capable_tool.refmap.json",
   "mixins": [
+    "HUDHandlerMixin",
     "ItemMixin",
-    "ModuleHelperMixin"
+    "MekaSuitEnergyLevelMixin",
+    "ModuleHelperMixin",
+    "ModuleJetpackUnitMixin",
+    "ModuleNutritionalInjectionUnitMixin"
   ],
   "client": [
   ],

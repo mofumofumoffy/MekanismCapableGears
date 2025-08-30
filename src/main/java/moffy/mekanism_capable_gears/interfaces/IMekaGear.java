@@ -1,4 +1,4 @@
-package moffy.mekanism_capable_gears;
+package moffy.mekanism_capable_gears.interfaces;
 
 import mekanism.api.math.FloatingLong;
 import mekanism.api.radial.RadialData;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface IMekaGears extends IModuleContainerItem, IGenericRadialModeItem {
+public interface IMekaGear extends IModuleContainerItem, IGenericRadialModeItem {
     default boolean areCapabilityConfigsLoaded() {
         return MekanismConfig.gear.isLoaded();
     }

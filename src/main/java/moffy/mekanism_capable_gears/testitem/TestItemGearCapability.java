@@ -7,7 +7,7 @@ import mekanism.common.content.gear.IBlastingItem;
 import mekanism.common.content.gear.mekatool.ModuleBlastingUnit;
 import mekanism.common.content.gear.shared.ModuleEnergyUnit;
 import mekanism.common.registries.MekanismModules;
-import moffy.mekanism_capable_gears.MekaGearsCapability;
+import moffy.mekanism_capable_gears.MekaGearCapability;
 import moffy.mekanism_capable_gears.MekanismCapableGears;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.Collections;
 import java.util.Map;
 
-public class TestItemGearCapability extends MekaGearsCapability implements IBlastingItem {
+public class TestItemGearCapability extends MekaGearCapability implements IBlastingItem {
 
     @Override
     public ResourceLocation getRadialId() {

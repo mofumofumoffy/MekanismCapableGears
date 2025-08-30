@@ -1,8 +1,7 @@
-package moffy.mekanism_capable_gears;
+package moffy.mekanism_capable_gears.interfaces;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import mekanism.common.lib.attribute.AttributeCache;
-import org.spongepowered.asm.mixin.Unique;
 
 import java.util.UUID;
 

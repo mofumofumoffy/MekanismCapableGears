@@ -37,10 +37,11 @@ import mekanism.common.tags.MekanismTags;
 import mekanism.common.util.ItemDataUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.StorageUtils;
-import moffy.mekanism_capable_gears.IAttributeCacheAccessor;
-import moffy.mekanism_capable_gears.IMekaGears;
-import moffy.mekanism_capable_gears.MekaGearsCapability;
-import moffy.mekanism_capable_gears.IMekaForgeItemHandler;
+import moffy.mekanism_capable_gears.RegisterAttributeCacheEvent;
+import moffy.mekanism_capable_gears.interfaces.IAttributeCacheAccessor;
+import moffy.mekanism_capable_gears.interfaces.IMekaGear;
+import moffy.mekanism_capable_gears.MekaGearCapability;
+import moffy.mekanism_capable_gears.interfaces.IMekaForgeItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -101,7 +102,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
             method = "<init>"
     )
     public void initAttributeCache(Item.Properties properties, CallbackInfo ci){
-        mekanism_capable_tool$attributeCaches = new Int2ObjectArrayMap<>(ModuleAttackAmplificationUnit.AttackDamage.values().length);
+        RegisterAttributeCacheEvent event = new RegisterAttributeCacheEvent(mekanism_capable_tool$item());
+        MinecraftForge.EVENT_BUS.post(event);
+        mekanism_capable_tool$attributeCaches = event.getAttributeCaches();
     }
 
     @Inject(
@@ -109,7 +112,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
             method="appendHoverText"
     )
     public void appendHoverText(ItemStack stack, Level level, List<Component> components, TooltipFlag tooltipFlag, CallbackInfo ci) {
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             if (MekKeyHandler.isKeyPressed(MekanismKeyHandler.detailsKey)) {
                 addModuleDetails(stack, components);
             } else {
@@ -163,7 +166,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
             cancellable = true
     )
     public void getDestroySpeed(ItemStack stack, BlockState state, CallbackInfoReturnable<Float> cir) {
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             IEnergyContainer energyContainer = StorageUtils.getEnergyContainer(stack, 0);
             if (energyContainer == null) {
                 cir.setReturnValue(0f);
@@ -184,7 +187,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
             cancellable = true
     )
     public void mineBlock(ItemStack stack, Level world, BlockState state, BlockPos pos, LivingEntity entity, CallbackInfoReturnable<Boolean> cir){
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             IEnergyContainer energyContainer = StorageUtils.getEnergyContainer(stack, 0);
             if (energyContainer != null) {
                 FloatingLong energyRequired = mekanism_capable_tool$getDestroyEnergy(stack, state.getDestroySpeed(world, pos), isModuleEnabled(stack, MekanismModules.SILK_TOUCH_UNIT));
@@ -200,7 +203,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
             cancellable = true
     )
     public void hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker, CallbackInfoReturnable<Boolean> cir) {
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             IModule<ModuleAttackAmplificationUnit> attackAmplificationUnit = getModule(stack, MekanismModules.ATTACK_AMPLIFICATION_UNIT);
             if (attackAmplificationUnit != null && attackAmplificationUnit.isEnabled()) {
                 //Note: We only have an energy cost if the damage is above base, so we can skip all those checks
@@ -237,7 +240,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     )
     public void use(Level world, Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
         ItemStack stack = player.getItemInHand(hand);
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             if (!world.isClientSide()) {
                 IModule<ModuleTeleportationUnit> module = getModule(stack, MekanismModules.TELEPORTATION_UNIT);
                 if (module != null && module.isEnabled()) {
@@ -287,7 +290,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     @Nullable
     @Override
     public Component getScrollTextComponent(@NotNull ItemStack stack) {
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             return getModules(stack).stream().filter(Module::handlesModeChange).findFirst().map(module -> module.getModeScrollComponent(stack)).orElse(null);
         }
         return IGenericRadialModeItem.super.getScrollTextComponent(stack);
@@ -335,9 +338,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public @Nullable RadialData<?> getRadialData(ItemStack stack) {
-        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGear> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGear mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             return mekaGearsCapability.getRadialData(stack);
         }
         return null;
@@ -345,9 +348,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public <M extends IRadialMode> @Nullable M getMode(ItemStack stack, RadialData<M> radialData) {
-        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGear> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGear mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             return mekaGearsCapability.getMode(stack, radialData);
         }
         return null;
@@ -355,18 +358,18 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public <M extends IRadialMode> void setMode(ItemStack stack, Player player, RadialData<M> radialData, M mode) {
-        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGear> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGear mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             mekaGearsCapability.setMode(stack, player, radialData, mode);
         }
     }
 
     @Override
     public void changeMode(@NotNull Player player, @NotNull ItemStack stack, int shift, DisplayChange displayChange) {
-        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGear> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY);
         if (mekaGearsCapabilityLazyOptional.isPresent()) {
-            IMekaGears mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGear mekaGearsCapability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
             mekaGearsCapability.changeMode(player, stack, shift, displayChange);
         }
     }
@@ -383,9 +386,9 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
 
     @Override
     public boolean onBlockStartBreak(ItemStack stack, BlockPos pos, Player player) {
-        LazyOptional<IMekaGears> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        LazyOptional<IMekaGear> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY);
         if(mekaGearsCapabilityLazyOptional.isPresent()){
-            IMekaGears capability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+            IMekaGear capability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
 
             if (player.level().isClientSide || player.isCreative()) {
                 return false;
@@ -425,7 +428,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     @Override
     public boolean isNotReplaceableByPickAction(ItemStack stack, Player player, int inventorySlot) {
         boolean result = stack.isEnchanted();
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             return result || ItemDataUtils.hasData(stack, NBTConstants.MODULES, Tag.TAG_COMPOUND);
         }
         return result;
@@ -434,7 +437,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     @Override
     public int getEnchantmentLevel(ItemStack stack, Enchantment enchantment) {
         int result = EnchantmentHelper.getTagEnchantmentLevel(enchantment, stack);
-        if(!stack.isEmpty() && stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(!stack.isEmpty() && stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             ListTag enchantments = ItemDataUtils.getList(stack, NBTConstants.ENCHANTMENTS);
             return Math.max(MekanismUtils.getEnchantmentLevel(enchantments, enchantment), result);
         }
@@ -444,7 +447,7 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     @Override
     public Map<Enchantment, Integer> getAllEnchantments(ItemStack stack) {
         Map<Enchantment, Integer> result = EnchantmentHelper.deserializeEnchantments(stack.getEnchantmentTags());
-        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+        if(stack.getCapability(MekaGearCapability.MEKA_GEAR_CAPABILITY).isPresent()){
             Map<Enchantment, Integer> enchantments = EnchantmentHelper.deserializeEnchantments(ItemDataUtils.getList(stack, NBTConstants.ENCHANTMENTS));
             result.forEach((enchantment, level) -> enchantments.merge(enchantment, level, Math::max));
             return enchantments;
