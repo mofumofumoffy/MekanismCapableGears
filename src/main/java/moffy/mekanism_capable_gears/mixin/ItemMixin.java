@@ -1,7 +1,5 @@
 package moffy.mekanism_capable_gears.mixin;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
@@ -41,6 +39,7 @@ import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.StorageUtils;
 import moffy.mekanism_capable_gears.IAttributeCacheAccessor;
 import moffy.mekanism_capable_gears.MekaGearsCapability;
+import moffy.mekanism_capable_gears.IMekaForgeItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -53,9 +52,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -71,7 +67,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.ToolAction;
-import net.minecraftforge.common.extensions.IForgeItem;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +84,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Mixin(Item.class)
-public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, IAttributeCacheAccessor {
+public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, IMekaForgeItemHandler, IAttributeCacheAccessor {
 
     @Unique
     private static final UUID ATTACK_DAMAGE_ADDITION = UUID.fromString("435fee9c-f619-40fd-96a3-f9a7d75ec04a");
@@ -383,5 +378,76 @@ public class ItemMixin implements IModuleContainerItem, IGenericRadialModeItem, 
     @Override
     public Int2ObjectMap<AttributeCache> mekanism_capable_tool$getAttributeCaches() {
         return this.mekanism_capable_tool$attributeCaches;
+    }
+
+    @Override
+    public boolean onBlockStartBreak(ItemStack stack, BlockPos pos, Player player) {
+        LazyOptional<MekaGearsCapability> mekaGearsCapabilityLazyOptional = stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY);
+        if(mekaGearsCapabilityLazyOptional.isPresent()){
+            MekaGearsCapability capability = mekaGearsCapabilityLazyOptional.orElseThrow(IllegalStateException::new);
+
+            if (player.level().isClientSide || player.isCreative()) {
+                return false;
+            }
+            IEnergyContainer energyContainer = StorageUtils.getEnergyContainer(stack, 0);
+            if (energyContainer != null) {
+                Level world = player.level();
+                BlockState state = world.getBlockState(pos);
+                boolean silk = ((IModuleContainerItem)stack.getItem()).isModuleEnabled(stack, MekanismModules.SILK_TOUCH_UNIT);
+                FloatingLong modDestroyEnergy = mekanism_capable_tool$getDestroyEnergy(stack, silk);
+                FloatingLong energyRequired = mekanism_capable_tool$getDestroyEnergy(modDestroyEnergy, state.getDestroySpeed(world, pos));
+                if (energyContainer.extract(energyRequired, Action.SIMULATE, AutomationType.MANUAL).greaterOrEqual(energyRequired) && capability instanceof IBlastingItem blastingCapability) {
+                    Map<BlockPos, BlockState> blocks = blastingCapability.getBlastedBlocks(world, player, stack, pos, state);
+                    blocks = blocks.isEmpty() && ModuleVeinMiningUnit.canVeinBlock(state) ? Map.of(pos, state) : blocks;
+
+                    Reference2BooleanMap<Block> oreTracker = blocks.values().stream().collect(Collectors.toMap(BlockBehaviour.BlockStateBase::getBlock,
+                            bs -> bs.is(MekanismTags.Blocks.ATOMIC_DISASSEMBLER_ORE), (l, r) -> l, Reference2BooleanArrayMap::new));
+
+                    Object2IntMap<BlockPos> veinedBlocks = mekanism_capable_tool$getVeinedBlocks(world, stack, blocks, oreTracker);
+                    if (!veinedBlocks.isEmpty()) {
+                        FloatingLong baseDestroyEnergy = mekanism_capable_tool$getDestroyEnergy(silk);
+                        MekanismUtils.veinMineArea(energyContainer, energyRequired, world, pos, (ServerPlayer) player, stack, stack.getItem(), veinedBlocks,
+                                hardness -> mekanism_capable_tool$getDestroyEnergy(modDestroyEnergy, hardness),
+                                (hardness, distance, bs) -> mekanism_capable_tool$getDestroyEnergy(baseDestroyEnergy, hardness).multiply(0.5 * Math.pow(distance, oreTracker.getBoolean(bs.getBlock()) ? 1.5 : 2)));
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canPerformAction(ItemStack stack, ToolAction action) {
+        return getModules(stack).stream().anyMatch(module -> module.isEnabled() && mekanism_capable_tool$canPerformAction(module, action));
+    }
+
+    @Override
+    public boolean isNotReplaceableByPickAction(ItemStack stack, Player player, int inventorySlot) {
+        boolean result = stack.isEnchanted();
+        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+            return result || ItemDataUtils.hasData(stack, NBTConstants.MODULES, Tag.TAG_COMPOUND);
+        }
+        return result;
+    }
+
+    @Override
+    public int getEnchantmentLevel(ItemStack stack, Enchantment enchantment) {
+        int result = EnchantmentHelper.getTagEnchantmentLevel(enchantment, stack);
+        if(!stack.isEmpty() && stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+            ListTag enchantments = ItemDataUtils.getList(stack, NBTConstants.ENCHANTMENTS);
+            return Math.max(MekanismUtils.getEnchantmentLevel(enchantments, enchantment), result);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<Enchantment, Integer> getAllEnchantments(ItemStack stack) {
+        Map<Enchantment, Integer> result = EnchantmentHelper.deserializeEnchantments(stack.getEnchantmentTags());
+        if(stack.getCapability(MekaGearsCapability.MEKA_GEARS_CAPABILITY).isPresent()){
+            Map<Enchantment, Integer> enchantments = EnchantmentHelper.deserializeEnchantments(ItemDataUtils.getList(stack, NBTConstants.ENCHANTMENTS));
+            result.forEach((enchantment, level) -> enchantments.merge(enchantment, level, Math::max));
+            return enchantments;
+        }
+        return result;
     }
 }

@@ -32,7 +32,6 @@ public class MekanismCapableGears {
         MekaGearsModuleRegistry.INSTANCE.register(bus);
         bus.addListener(MCGEvent::onRegisterCaps);
 
-        MinecraftForge.EVENT_BUS.addListener(MCGEvent::onBlockBreak);
         MinecraftForge.EVENT_BUS.addListener(MCGEvent::onModifyAttribute);
 
 

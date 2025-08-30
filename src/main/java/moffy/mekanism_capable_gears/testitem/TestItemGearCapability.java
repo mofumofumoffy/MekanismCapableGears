@@ -3,14 +3,23 @@ package moffy.mekanism_capable_gears.testitem;
 import mekanism.api.gear.IModule;
 import mekanism.api.math.FloatingLong;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.content.gear.IBlastingItem;
+import mekanism.common.content.gear.mekatool.ModuleBlastingUnit;
 import mekanism.common.content.gear.shared.ModuleEnergyUnit;
 import mekanism.common.registries.MekanismModules;
 import moffy.mekanism_capable_gears.MekaGearsCapability;
 import moffy.mekanism_capable_gears.MekanismCapableGears;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class TestItemGearCapability extends MekaGearsCapability {
+import java.util.Collections;
+import java.util.Map;
+
+public class TestItemGearCapability extends MekaGearsCapability implements IBlastingItem {
     public TestItemGearCapability(ItemStack stack) {
         super(stack);
     }
@@ -33,4 +42,17 @@ public class TestItemGearCapability extends MekaGearsCapability {
     }
 
 
+    @Override
+    public Map<BlockPos, BlockState> getBlastedBlocks(Level world, Player player, ItemStack stack, BlockPos pos, BlockState state) {
+        if (!player.isShiftKeyDown()) {
+            IModule<ModuleBlastingUnit> blastingUnit = getModule(stack, MekanismModules.BLASTING_UNIT);
+            if (blastingUnit != null && blastingUnit.isEnabled()) {
+                int radius = blastingUnit.getCustomInstance().getBlastRadius();
+                if (radius > 0 && IBlastingItem.canBlastBlock(world, pos, state)) {
+                    return IBlastingItem.findPositions(world, pos, player, radius);
+                }
+            }
+        }
+        return Collections.emptyMap();
+    }
 }
